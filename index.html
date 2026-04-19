@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Palabras en el pergamino</title>
+<style>
+  body{
+    margin:0;
+    padding:16px;
+    background:transparent;
+    box-sizing:border-box;
+  }
+
+  #sopa-pergamino{
+    --papel1:#f5ecd9;
+    --papel2:#ead9b8;
+    --tinta:#4a3728;
+    --suave:#6b5440;
+    --borde:#b9996b;
+    --borde2:#8a6845;
+    --sel:#d7e7f7;
+    --selb:#89add1;
+    --ok:#dceccf;
+    --okb:#7c9c69;
+    --hint:#fff3b0;
+    --hintb:#d4a017;
+    max-width:860px;
+    margin:0 auto;
+    padding:24px;
+    border:2px solid var(--borde);
+    border-radius:18px;
+    box-sizing:border-box;
+    color:var(--tinta);
+    font-family:Georgia,"Times New Roman",serif;
+    background:
+      radial-gradient(circle at top left, rgba(255,255,255,.45), transparent 28%),
+      radial-gradient(circle at bottom right, rgba(120,80,40,.08), transparent 26%),
+      linear-gradient(180deg,var(--papel1) 0%,var(--papel2) 100%);
+    box-shadow:0 10px 30px rgba(74,55,40,.18);
+  }
+
+  #sopa-pergamino .head{text-align:center;margin-bottom:18px}
+  #sopa-pergamino .title{margin:0;font-size:1.9rem;color:var(--borde2)}
+  #sopa-pergamino .sub{margin:8px 0 0;color:var(--suave);font-style:italic}
+  #sopa-pergamino .lvl{margin-top:10px;color:var(--suave);font-weight:700}
+
+  #sopa-pergamino .actions{
+    display:flex;
+    justify-content:center;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:18px;
+  }
+
+  #sopa-pergamino .btn{
+    border:1px solid var(--borde2);
+    background:linear-gradient(180deg,#b89257 0%,#9f783d 100%);
+    color:#fffaf0;
+    font-family:Georgia,"Times New Roman",serif;
+    font-size:1rem;
+    font-weight:700;
+    padding:10px 18px;
+    border-radius:999px;
+    cursor:pointer;
+  }
+
+  #sopa-pergamino .board-wrap{
+    display:flex;
+    justify-content:center;
+  }
+
+  #sopa-pergamino .board{
+    display:grid;
+    grid-template-columns:repeat(10,1fr);
+    gap:5px;
+    width:min(570px,100%);
+    max-width:100%;
+    touch-action:none;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+
+  #sopa-pergamino .cell{
+    aspect-ratio:1/1;
+    min-width:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(255,248,235,.86);
+    border:1px solid rgba(138,104,69,.48);
+    border-radius:8px;
+    font-weight:700;
+    font-size:1rem;
+    line-height:1;
+    box-sizing:border-box;
+    transition:background .2s, border-color .2s;
+  }
+
+  #sopa-pergamino .cell.sel{
+    background:var(--sel);
+    border-color:var(--selb);
+  }
+
+  #sopa-pergamino .cell.found{
+    background:var(--ok);
+    border-color:var(--okb);
+    color:#314728;
+  }
+
+  #sopa-pergamino .cell.hint{
+    background:var(--hint);
+    border-color:var(--hintb);
+  }
+
+  #sopa-pergamino .panel{
+    margin-top:18px;
+    padding:18px;
+    background:rgba(255,249,240,.6);
+    border:1px solid rgba(138,104,69,.35);
+    border-radius:14px;
+  }
+
+  #sopa-pergamino .flash{
+    min-height:30px;
+    margin-bottom:8px;
+    font-weight:700;
+    color:#2f6a2f;
+  }
+
+  #sopa-pergamino .remain{
+    margin-bottom:14px;
+    color:var(--suave);
+  }
+
+  #sopa-pergamino .label{
+    font-weight:700;
+    color:var(--borde2);
+    margin-bottom:10px;
+  }
+
+  #sopa-pergamino .foundlist{
+    display:grid;
+    gap:10px;
+  }
+
+  #sopa-pergamino .item{
+    background:rgba(255,247,232,.78);
+    border:1px solid rgba(167,124,54,.38);
+    border-radius:12px;
+    padding:10px 12px;
+  }
+
+  #sopa-pergamino .w{
+    font-weight:700;
+    margin-bottom:4px;
+  }
+
+  #sopa-pergamino .d{
+    color:var(--suave);
+    line-height:1.35;
+  }
+
+  #sopa-pergamino .end{
+  margin: 10px 0 10px 0;
+  padding:12px 14px;
+  border-radius:12px;
+  background:rgba(226,241,215,.88);
+  border:1px solid rgba(124,156,105,.5);
+  color:#31552c;
+  font-weight:700;
+  display:none;
+  text-align:center;
+}
+
+  #sopa-pergamino .next{
+  margin: 8px 0 14px 0;
+  display:none;
+  justify-content:center;
+}
+  }
+
+  @media (max-width:640px){
+    body{padding:8px}
+    #sopa-pergamino{padding:10px;border-radius:14px}
+    #sopa-pergamino .title{font-size:1.45rem}
+    #sopa-pergamino .sub,
+    #sopa-pergamino .lvl,
+    #sopa-pergamino .remain,
+    #sopa-pergamino .d{font-size:.92rem}
+    #sopa-pergamino .board{gap:3px}
+    #sopa-pergamino .cell{font-size:.8rem;border-radius:6px}
+    #sopa-pergamino .panel{padding:14px}
+    #sopa-pergamino .btn{
+      width:100%;
+      max-width:280px;
+      font-size:.96rem;
+      padding:10px 14px;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="sopa-pergamino">
+  <div class="head">
+    <h3 class="title">Palabras en el pergamino</h3>
+    <p class="sub">Busca las palabras ocultas y recobra su significado.</p>
+    <div class="lvl" id="sopa-lvl"></div>
+  </div>
+
+  <div class="actions">
+    <button class="btn" id="resetBtn" type="button">Comenzar de nuevo</button>
+    <button class="btn" id="shuffleBtn" type="button">Recolocar letras</button>
+    <button class="btn" id="hintBtn" type="button">Pista</button>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="panel">
+  <div class="flash" id="flash"></div>
+
+  <div class="end" id="end"></div>
+
+  <div class="next" id="nextWrap">
+    <button class="btn" id="nextBtn" type="button">Continuar</button>
+  </div>
+
+  <div class="remain" id="remain"></div>
+  <div class="label">Palabras encontradas</div>
+  <div class="foundlist" id="foundlist"></div>
+</div>
+</div>
+
+<script>
+(function(){
+  var STORAGE_KEY = "sopa_pergamino_progreso_v3";
+
+  var ROWS = 12;
+  var COLS = 10;
+  var LETTERS = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
+  var DIRS = [[0,1],[1,0],[1,1],[1,-1],[0,-1],[-1,0],[-1,-1],[-1,1]];
+  var MSGS = ["¡Muy bien!","¡Bravo!","¡Fantástico!","¡Excelente!","¡Estupendo!","¡Magnífico!","¡Enhorabuena!","¡Así se hace!"];
+
+  var SOUPS = [
+    [
+      {word:"ARAMBOL",def:"Pasamanos de una escalera."},
+      {word:"AVENTAR",def:"Lanzar al aire el grano y la paja."},
+      {word:"BELLACO",def:"Persona ruin o despreciable."},
+      {word:"COLLERA",def:"Aparejo de animales de labranza."},
+      {word:"ESCUDILLA",def:"Cuenco para servir comida."},
+      {word:"GAVILAN",def:"Pieza de hierro para limpiar la reja del arado."},
+      {word:"JOFAINA",def:"Palangana para lavarse."},
+      {word:"MENCIAR",def:"Hacer trabajos en el campo."},
+      {word:"ORZA",def:"Vasija para conservar alimentos."},
+      {word:"RECUA",def:"Conjunto de animales de carga."}
+    ],
+    [
+      {word:"ALJIBE",def:"Depósito para almacenar agua."},
+      {word:"BODEGON",def:"Cuadro o composición de objetos cotidianos."},
+      {word:"CALAMO",def:"Pluma antigua para escribir."},
+      {word:"DILUCIDAR",def:"Aclarar o explicar algo."},
+      {word:"ENJUNDIA",def:"Sustancia o parte esencial de algo."},
+      {word:"FARRAGO",def:"Mezcla confusa de cosas o ideas."},
+      {word:"GRANERO",def:"Lugar donde se guarda el grano."},
+      {word:"HONTANAR",def:"Manantial o nacimiento de agua."},
+      {word:"LUCERNA",def:"Lámpara antigua de aceite."},
+      {word:"MANCEBO",def:"Joven, especialmente en la primera juventud."}
+    ],
+    [
+      {word:"ABARCA",def:"Calzado rústico de cuero o esparto."},
+      {word:"ALACENA",def:"Armario empotrado para guardar alimentos."},
+      {word:"ALBOR",def:"Primera luz del amanecer."},
+      {word:"BARAJA",def:"Conjunto de naipes para jugar."},
+      {word:"CANDIL",def:"Lámpara antigua de aceite."},
+      {word:"DESVAN",def:"Parte alta de la casa bajo el tejado."},
+      {word:"FALTRIQUERA",def:"Bolsillo oculto en la ropa."},
+      {word:"LUMBRE",def:"Fuego encendido en el hogar."},
+      {word:"PESEBRE",def:"Recipiente donde comen los animales."},
+      {word:"ZAGUAN",def:"Espacio de entrada a una casa tradicional."}
+    ]
+  ];
+
+  var level = 0;
+  var board = [];
+  var placed = [];
+  var found = [];
+  var selecting = false;
+  var start = null;
+  var path = [];
+  var timer = null;
+  var hintTarget = null;
+  var hintLevel = 0;
+  var rotateNext = false;
+
+  function soup(){ return SOUPS[level]; }
+  function last(){ return level === SOUPS.length - 1; }
+  function nice(w){ return w.charAt(0) + w.slice(1).toLowerCase(); }
+  function randMsg(){ return MSGS[Math.floor(Math.random() * MSGS.length)]; }
+  function randLetter(){ return LETTERS.charAt(Math.floor(Math.random() * LETTERS.length)); }
+
+  function saveProgress(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        level: level,
+        found: found
+      }));
+    }catch(e){}
+  }
+
+  function loadProgress(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return false;
+      var data = JSON.parse(raw);
+      if(typeof data.level === "number" && data.level >= 0 && data.level < SOUPS.length){
+        level = data.level;
+      }
+      if(Array.isArray(data.found)){
+        found = data.found.slice();
+      }
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+
+  function clearProgress(){
+    try{
+      localStorage.removeItem(STORAGE_KEY);
+    }catch(e){}
+  }
+
+  function shuffle(arr){
+    var a = arr.slice(), i, j, t;
+    for(i = a.length - 1; i > 0; i--){
+      j = Math.floor(Math.random() * (i + 1));
+      t = a[i];
+      a[i] = a[j];
+      a[j] = t;
+    }
+    return a;
+  }
+
+  function emptyBoard(){
+    var b = [], r, c;
+    for(r = 0; r < ROWS; r++){
+      b[r] = [];
+      for(c = 0; c < COLS; c++) b[r][c] = "";
+    }
+    return b;
+  }
+
+  function canPlace(b, w, row, col, dr, dc){
+    var i, rr, cc;
+    for(i = 0; i < w.length; i++){
+      rr = row + dr * i;
+      cc = col + dc * i;
+      if(rr < 0 || rr >= ROWS || cc < 0 || cc >= COLS) return false;
+      if(b[rr][cc] !== "" && b[rr][cc] !== w.charAt(i)) return false;
+    }
+    return true;
+  }
+
+  function buildSoup(keepFound){
+    var previousFound = keepFound ? found.slice() : [];
+    var tries = 0, ok = false, words, b, p, i, t, dir, row, col, w, cells, k, rr, cc;
+
+    while(!ok && tries < 80){
+      tries++;
+      b = emptyBoard();
+      p = [];
+      words = shuffle(soup().map(function(x){ return x.word; })).sort(function(a,b){ return b.length - a.length; });
+      ok = true;
+
+      for(i = 0; i < words.length; i++){
+        w = words[i];
+        var placedNow = false;
+
+        for(t = 0; t < 1600; t++){
+          dir = DIRS[Math.floor(Math.random() * DIRS.length)];
+          row = Math.floor(Math.random() * ROWS);
+          col = Math.floor(Math.random() * COLS);
+
+          if(!canPlace(b, w, row, col, dir[0], dir[1])) continue;
+
+          cells = [];
+          for(k = 0; k < w.length; k++){
+            rr = row + dir[0] * k;
+            cc = col + dir[1] * k;
+            b[rr][cc] = w.charAt(k);
+            cells.push([rr, cc]);
+          }
+          p.push({word:w, cells:cells});
+          placedNow = true;
+          break;
+        }
+
+        if(!placedNow){
+          ok = false;
+          break;
+        }
+      }
+    }
+
+    if(!ok) throw new Error("No se ha podido generar la sopa.");
+
+    for(i = 0; i < ROWS; i++){
+      for(t = 0; t < COLS; t++){
+        if(b[i][t] === "") b[i][t] = randLetter();
+      }
+    }
+
+    board = b;
+    placed = p;
+    found = keepFound ? previousFound.filter(function(word){
+      return soup().some(function(item){ return item.word === word; });
+    }) : [];
+    path = [];
+    selecting = false;
+    start = null;
+    hintTarget = null;
+    hintLevel = 0;
+    rotateNext = false;
+    clearHints();
+  }
+
+  function drawBoard(){
+    var g = document.getElementById("board"), html = "", r, c;
+    for(r = 0; r < ROWS; r++){
+      for(c = 0; c < COLS; c++){
+        html += '<div class="cell" data-r="' + r + '" data-c="' + c + '">' + board[r][c] + '</div>';
+      }
+    }
+    g.innerHTML = html;
+    paintFound();
+  }
+
+  function cellEl(r, c){
+    return document.querySelector('.cell[data-r="' + r + '"][data-c="' + c + '"]');
+  }
+
+  function clearSel(){
+    var i, el;
+    for(i = 0; i < path.length; i++){
+      el = cellEl(path[i][0], path[i][1]);
+      if(el && !el.classList.contains("found")) el.classList.remove("sel");
+    }
+  }
+
+  function clearHints(){
+    var hints = document.querySelectorAll(".cell.hint");
+    var i;
+    for(i = 0; i < hints.length; i++){
+      hints[i].classList.remove("hint");
+    }
+  }
+
+  function setPath(p){
+    var i, el;
+    clearSel();
+    path = p.slice();
+    for(i = 0; i < path.length; i++){
+      el = cellEl(path[i][0], path[i][1]);
+      if(el && !el.classList.contains("found")) el.classList.add("sel");
+    }
+  }
+
+  function line(a, b){
+    var r1 = a[0], c1 = a[1], r2 = b[0], c2 = b[1];
+    var dr = Math.sign(r2 - r1), dc = Math.sign(c2 - c1);
+    var sameRow = r1 === r2, sameCol = c1 === c2, diag = Math.abs(r2 - r1) === Math.abs(c2 - c1);
+    var len, out = [], i;
+    if(!(sameRow || sameCol || diag)) return [a];
+    len = Math.max(Math.abs(r2 - r1), Math.abs(c2 - c1)) + 1;
+    for(i = 0; i < len; i++) out.push([r1 + dr * i, c1 + dc * i]);
+    return out;
+  }
+
+  function pathWord(p){
+    var s = "", i;
+    for(i = 0; i < p.length; i++) s += board[p[i][0]][p[i][1]];
+    return s;
+  }
+
+  function eqPath(a, b){
+    var i;
+    if(!a || !b || a.length !== b.length) return false;
+    for(i = 0; i < a.length; i++){
+      if(a[i][0] !== b[i][0] || a[i][1] !== b[i][1]) return false;
+    }
+    return true;
+  }
+
+  function rev(p){ return p.slice().reverse(); }
+  function hasFound(w){ return found.indexOf(w) !== -1; }
+
+  function meta(w){
+    var s = soup(), i;
+    for(i = 0; i < s.length; i++) if(s[i].word === w) return s[i];
+    return null;
+  }
+
+  function flash(txt, ms){
+    var f = document.getElementById("flash");
+    f.textContent = txt;
+    if(timer) clearTimeout(timer);
+    if(ms !== 999999){
+      timer = setTimeout(function(){ f.textContent = ""; }, ms || 3200);
+    }
+  }
+
+  function updateRemain(){
+    document.getElementById("remain").textContent = "Te quedan " + (soup().length - found.length) + " palabra" + ((soup().length - found.length) === 1 ? "" : "s") + ".";
+  }
+
+  function updateList(){
+    var s = soup(), i, out = "";
+    for(i = 0; i < s.length; i++){
+      if(hasFound(s[i].word)){
+        out += '<div class="item"><div class="w">' + nice(s[i].word) + '</div><div class="d">' + s[i].def + '</div></div>';
+      }
+    }
+    document.getElementById("foundlist").innerHTML = out;
+  }
+
+  function updateEnd(){
+    var end = document.getElementById("end");
+    var next = document.getElementById("nextWrap");
+
+    if(found.length !== soup().length){
+      end.style.display = "none";
+      next.style.display = "none";
+      return;
+    }
+
+    end.style.display = "block";
+
+    if(last()){
+      end.textContent = "Has encontrado todas las palabras del pergamino.";
+      next.style.display = "none";
+    }else{
+      end.textContent = "Has encontrado todas las palabras.";
+      next.style.display = "flex";
+    }
+  }
+
+  function paintFound(){
+    var i, j, el;
+    for(i = 0; i < placed.length; i++){
+      if(!hasFound(placed[i].word)) continue;
+      for(j = 0; j < placed[i].cells.length; j++){
+        el = cellEl(placed[i].cells[j][0], placed[i].cells[j][1]);
+        if(el){
+          el.classList.remove("sel");
+          el.classList.add("found");
+        }
+      }
+    }
+  }
+
+  function conceptualHintForWord(word){
+    var map = {
+      "ARAMBOL":"Relacionado con una parte de la casa. Empieza por A.",
+      "AVENTAR":"Acción propia de las labores tradicionales del campo. Empieza por A.",
+      "BELLACO":"Se refiere a una persona de mala condición. Empieza por B.",
+      "COLLERA":"Relacionado con animales de labranza. Empieza por C.",
+      "ESCUDILLA":"Objeto humilde de uso doméstico. Empieza por E.",
+      "GAVILAN":"Herramienta vinculada al trabajo del campo. Empieza por G.",
+      "JOFAINA":"Objeto doméstico antiguo para el aseo. Empieza por J.",
+      "MENCIAR":"Acción relacionada con trabajos del campo. Empieza por M.",
+      "ORZA":"Objeto tradicional para guardar alimentos. Empieza por O.",
+      "RECUA":"Relacionado con animales de carga. Empieza por R.",
+      "ALJIBE":"Relacionado con el agua almacenada. Empieza por A.",
+      "BODEGON":"Vinculado a objetos cotidianos y representación visual. Empieza por B.",
+      "CALAMO":"Instrumento antiguo de escritura. Empieza por C",
+      "DILUCIDAR":"Acción de aclarar o explicar. Empieza por D",
+      "ENJUNDIA":"Se refiere a lo esencial o sustancioso. Empieza por E.",
+      "FARRAGO":"Relacionado con mezcla y confusión. Empieza por F.",
+      "GRANERO":"Espacio vinculado a la agricultura. Empieza por G.",
+      "HONTANAR":"Relacionado con el agua que nace. Empieza por H.",
+      "LUCERNA":"Objeto de iluminación antigua. Empieza por L.",
+      "MANCEBO":"Se refiere a la juventud. Empieza por M.",
+      "ABARCA":"Prenda o calzado tradicional. Empieza por A",
+      "ALACENA":"Mueble o espacio doméstico. Empieza por A.",
+      "ALBOR":"Relacionado con el comienzo del día.Empieza por A.",
+      "BARAJA":"Objeto vinculado al juego. Empieza por B.",
+      "CANDIL":"Objeto antiguo para alumbrar. Empieza por C.",
+      "DESVAN":"Parte de la casa. Empieza por D.",
+      "FALTRIQUERA":"Elemento de la vestimenta antigua. Empieza por F.",
+      "LUMBRE":"Relacionado con el fuego del hogar. Empieza por L.",
+      "PESEBRE":"Lugar vinculado a los animales. Empieza por P.",
+      "ZAGUAN":"Espacio de entrada en una casa. Empieza por Z."
+    };
+    return map[word] || "Palabra antigua relacionada con la vida tradicional.";
+  }
+
+  function showHint(){
+    var pending = placed.filter(function(item){ return !hasFound(item.word); });
+    var chosen, metaWord, cell, r, c, el, texto;
+
+    if(found.length === soup().length){
+      flash("Ya has encontrado todas las palabras.", 2200);
+      return;
+    }
+
+    if(!pending.length){
+      flash("No quedan palabras por encontrar.", 2200);
+      return;
+    }
+
+    if(hintLevel > 2){
+      hintTarget = null;
+      hintLevel = 0;
+      rotateNext = true;
+      clearHints();
+    }
+
+    if(!hintTarget || hasFound(hintTarget.word)){
+      hintTarget = pending[Math.floor(Math.random() * pending.length)];
+    }
+
+    chosen = hintTarget;
+    metaWord = meta(chosen.word);
+
+    if(hintLevel === 0){
+      clearHints();
+      texto = "Pista: " + conceptualHintForWord(chosen.word);
+      if(rotateNext){
+        texto = "Vale, busquemos otra palabra. " + texto;
+        rotateNext = false;
+      }
+      flash(texto, 999999);
+    }
+    else if(hintLevel === 1){
+      clearHints();
+      flash("Pista: " + metaWord.def, 999999);
+    }
+    else if(hintLevel === 2){
+      clearHints();
+      cell = chosen.cells[Math.floor(Math.random() * chosen.cells.length)];
+      for(r = cell[0]-1; r <= cell[0]+1; r++){
+        for(c = cell[1]-1; c <= cell[1]+1; c++){
+          el = cellEl(r,c);
+          if(el && !el.classList.contains("found")){
+            el.classList.add("hint");
+          }
+        }
+      }
+      flash("Pista: la palabra está cerca de la zona iluminada.", 999999);
+    }
+
+    hintLevel++;
+  }
+
+  function complete(match){
+    var i, el, m;
+    if(hasFound(match.word)) return;
+    found.push(match.word);
+
+    for(i = 0; i < match.cells.length; i++){
+      el = cellEl(match.cells[i][0], match.cells[i][1]);
+      if(el){
+        el.classList.remove("sel");
+        el.classList.remove("hint");
+        el.classList.add("found");
+      }
+    }
+
+    path = [];
+    hintTarget = null;
+    hintLevel = 0;
+    rotateNext = false;
+    clearHints();
+
+    updateList();
+    updateRemain();
+    updateEnd();
+    saveProgress();
+
+    if(found.length === soup().length){
+      flash(last() ? randMsg() + " Has recuperado todas las palabras del pergamino." : randMsg() + " Has encontrado todas las palabras.", 4200);
+      return;
+    }
+
+    m = meta(match.word);
+    if(m) flash(randMsg() + " " + nice(m.word) + ": " + m.def, 3200);
+  }
+
+  function resolve(){
+    var selected = pathWord(path), i, item, reversed, match = null;
+    if(!path.length) return;
+
+    for(i = 0; i < placed.length; i++){
+      item = placed[i];
+      if(hasFound(item.word)) continue;
+      reversed = item.word.split("").reverse().join("");
+
+      if(eqPath(path, item.cells) || eqPath(path, rev(item.cells)) || selected === item.word || selected === reversed){
+        match = item;
+        break;
+      }
+    }
+
+    if(match){
+      complete(match);
+    }else{
+      setTimeout(function(){
+        clearSel();
+        path = [];
+      }, 120);
+    }
+  }
+
+  function renderStaticTexts(){
+    document.getElementById("sopa-lvl").textContent = "Sopa " + (level + 1) + " de " + SOUPS.length;
+  }
+
+  function renderAll(){
+    renderStaticTexts();
+    drawBoard();
+    updateRemain();
+    updateList();
+    updateEnd();
+  }
+
+  function bind(){
+    var g = document.getElementById("board");
+
+    document.getElementById("resetBtn").onclick = function(){
+      level = 0;
+      found = [];
+      clearProgress();
+      buildSoup(false);
+      renderAll();
+      saveProgress();
+      flash("Se ha reiniciado el recorrido.", 2200);
+    };
+
+    document.getElementById("shuffleBtn").onclick = function(){
+      buildSoup(true);
+      renderAll();
+      saveProgress();
+      flash("Las letras se han recolocado.", 2200);
+    };
+
+    document.getElementById("hintBtn").onclick = function(){
+      showHint();
+    };
+
+    document.getElementById("nextBtn").onclick = function(){
+      if(!last()){
+        level++;
+        found = [];
+        buildSoup(false);
+        renderAll();
+        saveProgress();
+      }
+    };
+
+    g.onpointerdown = function(e){
+      var cell = e.target.closest(".cell");
+      if(!cell) return;
+      selecting = true;
+      start = [parseInt(cell.getAttribute("data-r"),10), parseInt(cell.getAttribute("data-c"),10)];
+      setPath([start]);
+    };
+
+    g.onpointermove = function(e){
+      var elem, cell, end;
+      if(!selecting || !start) return;
+      elem = document.elementFromPoint(e.clientX,e.clientY);
+      if(!elem) return;
+      cell = elem.closest(".cell");
+      if(!cell) return;
+      end = [parseInt(cell.getAttribute("data-r"),10), parseInt(cell.getAttribute("data-c"),10)];
+      setPath(line(start, end));
+    };
+
+    document.onpointerup = function(){
+      if(!selecting) return;
+      selecting = false;
+      resolve();
+      start = null;
+    };
+  }
+
+  loadProgress();
+  buildSoup(true);
+  renderAll();
+  bind();
+  saveProgress();
+})();
+</script>
+</body>
+</html>
